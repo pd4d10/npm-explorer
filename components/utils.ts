@@ -70,7 +70,7 @@ export interface PackageMetaDirectory {
 
 export type PackageMetaItem = PackageMetaFile | PackageMetaDirectory
 
-const UNPKG_URL = import.meta.env.VITE_UNPKG_URL ?? 'https://unpkg.com'
+const UNPKG_URL = 'https://unpkg.com'
 
 export const fetchPackageJson = async (packageName: string) => {
   const res = await fetch(`${UNPKG_URL}/${packageName}/package.json`)

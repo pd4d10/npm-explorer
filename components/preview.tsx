@@ -1,6 +1,6 @@
 import React, { FC } from 'react'
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
-import githubStyle from 'react-syntax-highlighter/dist/esm/styles/hljs/github'
+import githubStyle from 'react-syntax-highlighter/dist/cjs/styles/hljs/github'
 import { Icon, Classes } from '@blueprintjs/core'
 import langJs from 'highlight.js/lib/languages/javascript'
 import langCss from 'highlight.js/lib/languages/css'

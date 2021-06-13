@@ -1,9 +1,9 @@
 import React, { FC } from 'react'
-import { Entry } from './entry'
+import { Entry } from '@/components/entry'
 import { H1 } from '@blueprintjs/core'
-import { centerStyles } from './utils'
+import { centerStyles } from '@/components/utils'
 
-export const Home: FC = () => {
+const Home: FC = () => {
   return (
     <div style={{ ...centerStyles, height: '100vh', flexDirection: 'column' }}>
       <H1 style={{ paddingBottom: 20 }}>npmview</H1>
@@ -20,3 +20,5 @@ export const Home: FC = () => {
     </div>
   )
 }
+
+export default Home

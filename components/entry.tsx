@@ -1,11 +1,12 @@
 import React, { useState, FC, useRef, useEffect } from 'react'
 import { InputGroup, Button, Classes } from '@blueprintjs/core'
-import { Link, useHistory } from 'react-router-dom'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 
 const examples = ['react', 'react@15', 'react@15.0.0']
 
 export const Entry: FC<{ afterChange?: Function }> = ({ afterChange }) => {
-  const history = useHistory()
+  const router = useRouter()
   const [name, setName] = useState('')
   const inputRef = useRef<HTMLInputElement>()
 
@@ -20,7 +21,7 @@ export const Entry: FC<{ afterChange?: Function }> = ({ afterChange }) => {
         onSubmit={(e) => {
           e.preventDefault()
           afterChange && afterChange()
-          history.push(`/${name}`)
+          router.push(`/${name}`)
         }}
       >
         <InputGroup
@@ -40,14 +41,17 @@ export const Entry: FC<{ afterChange?: Function }> = ({ afterChange }) => {
         <span>e.g.</span>
         {examples.map((name) => (
           <Link
-            to={'/' + name}
+            href={{ pathname: '/[...slug]', query: { slug: [name] } }}
             key={name}
-            style={{ paddingLeft: 20 }}
-            onClick={() => {
-              afterChange && afterChange()
-            }}
           >
-            {name}
+            <a
+              style={{ paddingLeft: 20 }}
+              onClick={() => {
+                afterChange && afterChange()
+              }}
+            >
+              {name}
+            </a>
           </Link>
         ))}
       </div>

@@ -1,4 +1,11 @@
-import React, { useEffect, useState, useCallback, FC, useRef } from 'react'
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  FC,
+  useRef,
+  useMemo,
+} from 'react'
 import path from 'path'
 import {
   Tree,
@@ -14,8 +21,9 @@ import {
   Intent,
   Button,
 } from '@blueprintjs/core'
+import { useRouter } from 'next/router'
 import numeral from 'numeral'
-import GitHubButton from 'react-github-btn'
+// import GitHubButton from 'react-github-btn'
 import {
   getRepositoryUrl,
   PackageMetaDirectory,
@@ -25,18 +33,27 @@ import {
   fetchCode,
   centerStyles,
   HEADER_HEIGHT,
-} from './utils'
-import { Preview } from './preview'
-import { Entry } from './entry'
-import { useRouteMatch } from 'react-router-dom'
+} from '@/components/utils'
+import { Preview } from '@/components/preview'
+import { Entry } from '@/components/entry'
 
-export const Package: FC = () => {
-  const { params } = useRouteMatch<{ name: string; scope?: string }>()
+const Package: FC = () => {
+  const { isReady, query } = useRouter()
+  const [fullName, version] = useMemo(() => {
+    if (!query.slug) return ['', '']
 
-  let [fullName, version] = params.name.split('@')
-  if (params.scope) {
-    fullName = params.scope + '/' + fullName
-  }
+    let [scope, name] = query.slug as [string, string]
+    if (!name) {
+      name = scope
+      scope = ''
+    }
+
+    let [fullName, version] = name.split('@')
+    if (scope) {
+      fullName = scope + '/' + fullName
+    }
+    return [fullName, version]
+  }, [query])
 
   const toastRef = useRef<Toaster>(null)
   const [loadingMeta, setLoadingMeta] = useState(false)
@@ -50,6 +67,8 @@ export const Package: FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   useEffect(() => {
+    if (!fullName) return
+
     const init = async () => {
       try {
         setSelected(undefined)
@@ -74,6 +93,45 @@ export const Package: FC = () => {
     }
     init()
   }, [fullName, version])
+
+  const handleClick = useCallback(
+    async (node: ITreeNode<PackageMetaItem>) => {
+      if (!node.nodeData) return
+
+      switch (node.nodeData.type) {
+        case 'directory':
+          setSelected(node.id as string)
+          setExpandedMap((old) => ({ ...old, [node.id]: !old[node.id] }))
+          break
+        case 'file':
+          if (selected === node.id) return
+
+          setSelected(node.id as string)
+          try {
+            setLoadingCode(true)
+            setCode(
+              await fetchCode(
+                `${fullName}@${packageJson.version}`,
+                node.id as string
+              )
+            )
+            setExt(path.extname(node.id.toString()).slice(1).toLowerCase())
+          } catch (err) {
+            console.error(err)
+            if (toastRef.current) {
+              toastRef.current.show({
+                message: err.message,
+                intent: Intent.DANGER,
+              })
+            }
+          } finally {
+            setLoadingCode(false)
+          }
+          break
+      }
+    },
+    [fullName, packageJson, selected]
+  )
 
   const convertMetaToTreeNode = (
     file: PackageMetaItem
@@ -117,44 +175,7 @@ export const Package: FC = () => {
     }
   }
 
-  const handleClick = useCallback(
-    async (node: ITreeNode<PackageMetaItem>) => {
-      if (!node.nodeData) return
-
-      switch (node.nodeData.type) {
-        case 'directory':
-          setSelected(node.id as string)
-          setExpandedMap((old) => ({ ...old, [node.id]: !old[node.id] }))
-          break
-        case 'file':
-          if (selected === node.id) return
-
-          setSelected(node.id as string)
-          try {
-            setLoadingCode(true)
-            setCode(
-              await fetchCode(
-                `${fullName}@${packageJson.version}`,
-                node.id as string
-              )
-            )
-            setExt(path.extname(node.id.toString()).slice(1).toLowerCase())
-          } catch (err) {
-            console.error(err)
-            if (toastRef.current) {
-              toastRef.current.show({
-                message: err.message,
-                intent: Intent.DANGER,
-              })
-            }
-          } finally {
-            setLoadingCode(false)
-          }
-          break
-      }
-    },
-    [fullName, packageJson, selected]
-  )
+  if (!isReady) return null
 
   if (loadingMeta) {
     return (
@@ -239,7 +260,7 @@ export const Package: FC = () => {
           align="right"
           style={{ height: HEADER_HEIGHT, fontSize: 0 }}
         >
-          <GitHubButton
+          {/* <GitHubButton
             href="https://github.com/pd4d10/npmview"
             aria-label="Star pd4d10/npmview on GitHub"
             data-icon="octicon-star"
@@ -247,7 +268,7 @@ export const Package: FC = () => {
             data-size="large"
           >
             Star
-          </GitHubButton>
+          </GitHubButton> */}
         </NavbarGroup>
       </Navbar>
       <div
@@ -286,3 +307,5 @@ export const Package: FC = () => {
     </div>
   )
 }
+
+export default Package
