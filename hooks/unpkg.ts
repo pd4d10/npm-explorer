@@ -1,23 +1,30 @@
+import { UNPKG_URL } from '@/components/utils'
 import { useRouter } from 'next/router'
-import { useMemo } from 'react'
 
-export const useUnpkgPath = () => {
+export const useInfo = () => {
   const { query } = useRouter()
-  const [fullName, version] = useMemo(() => {
-    if (!query.slug) return ['', '']
+  if (!query.slug) return null
 
-    let [scope, name] = query.slug as [string, string]
-    if (!name) {
-      name = scope
-      scope = ''
-    }
+  let [scope, name] = query.slug as [string, string]
+  if (!name) {
+    name = scope
+    scope = ''
+  }
 
-    let [fullName, version] = name.split('@')
-    if (scope) {
-      fullName = scope + '/' + fullName
-    }
-    return [fullName, version]
-  }, [query])
+  let [fullName, version] = name.split('@')
+  if (scope) {
+    fullName = scope + '/' + fullName
+  }
 
-  return version ? `${fullName}@${version}` : fullName
+  const unpkgPath = version ? `${fullName}@${version}` : fullName
+  const unpkgPrefix = `${UNPKG_URL}/${unpkgPath}`
+
+  return {
+    name: fullName,
+    version,
+    unpkgPrefix,
+    unpkgPkgUrl: unpkgPrefix + '/package.json',
+    unpkgMetaUrl: unpkgPrefix + '/?meta',
+    registryUrl: '/npmjs/' + fullName + (version ? '/' + version : ''),
+  }
 }

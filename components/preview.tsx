@@ -9,9 +9,9 @@ import langTs from 'highlight.js/lib/languages/typescript'
 import langJson from 'highlight.js/lib/languages/json'
 import langMd from 'highlight.js/lib/languages/markdown'
 import langTxt from 'highlight.js/lib/languages/plaintext'
-import { centerStyles, HEADER_HEIGHT, unpkgFetcher } from './utils'
+import { centerStyles, HEADER_HEIGHT, textFetcher, UNPKG_URL } from './utils'
 import useSWR from 'swr'
-import { useUnpkgPath } from '@/hooks/unpkg'
+import { useInfo } from '@/hooks/unpkg'
 import path from 'path'
 
 SyntaxHighlighter.registerLanguage('js', langJs)
@@ -29,11 +29,11 @@ const languageMap: { [key: string]: string } = {
   '': 'txt',
 }
 
-export const Preview: FC<{ filePath: string }> = ({ filePath }) => {
-  const unpkgPath = useUnpkgPath()
+export const Preview: FC<{ filePath?: string }> = ({ filePath }) => {
+  const info = useInfo()
   const { data, isValidating } = useSWR<string>(
-    unpkgPath && filePath ? [`/${unpkgPath}${filePath}`, true] : null,
-    unpkgFetcher
+    info && filePath ? [info.unpkgPrefix + filePath, 'text'] : null,
+    textFetcher
   )
 
   if (isValidating) {
@@ -44,7 +44,7 @@ export const Preview: FC<{ filePath: string }> = ({ filePath }) => {
     )
   }
 
-  if (data == null) {
+  if (filePath == null || data == null) {
     return (
       <div
         style={{ ...centerStyles, height: '100%' }}

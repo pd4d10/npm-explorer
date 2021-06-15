@@ -1,4 +1,4 @@
-import React, { useState, useCallback, FC, useRef } from 'react'
+import React, { useState, FC, useRef } from 'react'
 import path from 'path'
 import {
   Tree,
@@ -22,16 +22,16 @@ import {
   PackageMetaItem,
   centerStyles,
   HEADER_HEIGHT,
-  unpkgFetcher,
+  UNPKG_URL,
 } from '@/components/utils'
 import { Preview } from '@/components/preview'
 import { Entry } from '@/components/entry'
 import useSWR from 'swr'
-import { useUnpkgPath } from '@/hooks/unpkg'
+import { useInfo } from '@/hooks/unpkg'
 
 const Package: FC = () => {
   const { isReady } = useRouter()
-  const unpkgPath = useUnpkgPath()
+  const info = useInfo()
 
   const toastRef = useRef<Toaster>(null)
   const [expandedMap, setExpandedMap] = useState<{ [key: string]: boolean }>({})
@@ -39,14 +39,10 @@ const Package: FC = () => {
   const [filePath, setFilePath] = useState<string>()
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const packageJson = useSWR<any>(
-    unpkgPath ? `/${unpkgPath}/package.json` : null,
-    unpkgFetcher
-  )
-  const meta = useSWR<PackageMetaDirectory>(
-    unpkgPath ? `/${unpkgPath}/?meta` : null,
-    unpkgFetcher
-  )
+  const packageJson = useSWR<any>(info?.unpkgPkgUrl ?? null)
+  const meta = useSWR<PackageMetaDirectory>(info?.unpkgMetaUrl ?? null)
+  const registryInfo = useSWR<any>(info?.registryUrl ?? null)
+  console.log(registryInfo.data)
 
   const handleClick = async (node: ITreeNode<PackageMetaItem>) => {
     if (!node.nodeData) return

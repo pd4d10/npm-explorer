@@ -70,15 +70,11 @@ export interface PackageMetaDirectory {
 
 export type PackageMetaItem = PackageMetaFile | PackageMetaDirectory
 
-const UNPKG_URL = 'https://unpkg.com'
+export const UNPKG_URL = 'https://unpkg.com'
 
-export const unpkgFetcher = async (path: string, text = false) => {
-  const res = await fetch(UNPKG_URL + path)
-  if (text) {
-    return res.text()
-  } else {
-    return res.json()
-  }
+export const textFetcher = async (url: string) => {
+  const res = await fetch(url)
+  return res.text()
 }
 
 export const centerStyles: CSSProperties = {

@@ -26,3 +26,4 @@ dist/
 
 .vercel
 .next/
+yarn.lock
