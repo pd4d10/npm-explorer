@@ -1,11 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-  useCallback,
-  FC,
-  useRef,
-  useMemo,
-} from 'react'
+import React, { useState, useCallback, FC, useRef } from 'react'
 import path from 'path'
 import {
   Tree,
@@ -18,7 +11,6 @@ import {
   Classes,
   Spinner,
   Toaster,
-  Intent,
   Button,
 } from '@blueprintjs/core'
 import { useRouter } from 'next/router'
@@ -28,110 +20,51 @@ import {
   getRepositoryUrl,
   PackageMetaDirectory,
   PackageMetaItem,
-  fetchMeta,
-  fetchPackageJson,
-  fetchCode,
   centerStyles,
   HEADER_HEIGHT,
+  unpkgFetcher,
 } from '@/components/utils'
 import { Preview } from '@/components/preview'
 import { Entry } from '@/components/entry'
+import useSWR from 'swr'
+import { useUnpkgPath } from '@/hooks/unpkg'
 
 const Package: FC = () => {
-  const { isReady, query } = useRouter()
-  const [fullName, version] = useMemo(() => {
-    if (!query.slug) return ['', '']
-
-    let [scope, name] = query.slug as [string, string]
-    if (!name) {
-      name = scope
-      scope = ''
-    }
-
-    let [fullName, version] = name.split('@')
-    if (scope) {
-      fullName = scope + '/' + fullName
-    }
-    return [fullName, version]
-  }, [query])
+  const { isReady } = useRouter()
+  const unpkgPath = useUnpkgPath()
 
   const toastRef = useRef<Toaster>(null)
-  const [loadingMeta, setLoadingMeta] = useState(false)
-  const [meta, setMeta] = useState<PackageMetaDirectory>()
-  const [packageJson, setPackageJson] = useState<any>()
   const [expandedMap, setExpandedMap] = useState<{ [key: string]: boolean }>({})
   const [selected, setSelected] = useState<string>()
-  const [loadingCode, setLoadingCode] = useState(false)
-  const [code, setCode] = useState<string>()
-  const [ext, setExt] = useState('')
+  const [filePath, setFilePath] = useState<string>()
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  useEffect(() => {
-    if (!fullName) return
-
-    const init = async () => {
-      try {
-        setSelected(undefined)
-        setCode(undefined)
-        setLoadingMeta(true)
-        const _packageJson = await fetchPackageJson(
-          version ? `${fullName}@${version}` : fullName
-        )
-        setPackageJson(_packageJson)
-        setMeta(await fetchMeta(`${fullName}@${_packageJson.version}`))
-      } catch (err) {
-        console.error(err)
-        if (toastRef.current) {
-          toastRef.current.show({
-            message: err.message,
-            intent: Intent.DANGER,
-          })
-        }
-      } finally {
-        setLoadingMeta(false)
-      }
-    }
-    init()
-  }, [fullName, version])
-
-  const handleClick = useCallback(
-    async (node: ITreeNode<PackageMetaItem>) => {
-      if (!node.nodeData) return
-
-      switch (node.nodeData.type) {
-        case 'directory':
-          setSelected(node.id as string)
-          setExpandedMap((old) => ({ ...old, [node.id]: !old[node.id] }))
-          break
-        case 'file':
-          if (selected === node.id) return
-
-          setSelected(node.id as string)
-          try {
-            setLoadingCode(true)
-            setCode(
-              await fetchCode(
-                `${fullName}@${packageJson.version}`,
-                node.id as string
-              )
-            )
-            setExt(path.extname(node.id.toString()).slice(1).toLowerCase())
-          } catch (err) {
-            console.error(err)
-            if (toastRef.current) {
-              toastRef.current.show({
-                message: err.message,
-                intent: Intent.DANGER,
-              })
-            }
-          } finally {
-            setLoadingCode(false)
-          }
-          break
-      }
-    },
-    [fullName, packageJson, selected]
+  const packageJson = useSWR<any>(
+    unpkgPath ? `/${unpkgPath}/package.json` : null,
+    unpkgFetcher
   )
+  const meta = useSWR<PackageMetaDirectory>(
+    unpkgPath ? `/${unpkgPath}/?meta` : null,
+    unpkgFetcher
+  )
+
+  const handleClick = async (node: ITreeNode<PackageMetaItem>) => {
+    if (!node.nodeData) return
+
+    const id = node.id as string
+
+    switch (node.nodeData.type) {
+      case 'directory':
+        setSelected(id)
+        setExpandedMap((old) => ({ ...old, [node.id]: !old[node.id] }))
+        break
+      case 'file':
+        if (selected === node.id) return
+        setSelected(id)
+        setFilePath(id)
+        break
+    }
+  }
 
   const convertMetaToTreeNode = (
     file: PackageMetaItem
@@ -177,7 +110,7 @@ const Package: FC = () => {
 
   if (!isReady) return null
 
-  if (loadingMeta) {
+  if (packageJson.isValidating || meta.isValidating) {
     return (
       <div style={{ ...centerStyles, height: '100vh' }}>
         <Spinner />
@@ -185,9 +118,9 @@ const Package: FC = () => {
     )
   }
 
-  if (!meta) return null
+  if (!meta.data) return null
 
-  const files = convertMetaToTreeNode(meta).childNodes
+  const files = convertMetaToTreeNode(meta.data).childNodes
   if (!files) return null
 
   return (
@@ -201,7 +134,7 @@ const Package: FC = () => {
               setDialogOpen(true)
             }}
           >
-            {packageJson.name}@{packageJson.version}
+            {packageJson.data.name}@{packageJson.data.version}
           </Button>
 
           <Dialog
@@ -223,36 +156,38 @@ const Package: FC = () => {
 
           <NavbarDivider />
           <a
-            href={`https://www.npmjs.com/package/${packageJson.name}/v/${packageJson.version}`}
+            href={`https://www.npmjs.com/package/${packageJson.data.name}/v/${packageJson.data.version}`}
           >
             npm
           </a>
 
-          {packageJson.homepage && (
+          {packageJson.data.homepage && (
             <>
               <NavbarDivider />
-              <a href={packageJson.homepage}>homepage</a>
+              <a href={packageJson.data.homepage}>homepage</a>
             </>
           )}
 
-          {packageJson.repository && (
+          {packageJson.data.repository && (
             <>
               <NavbarDivider />
-              <a href={getRepositoryUrl(packageJson.repository)}>repository</a>
+              <a href={getRepositoryUrl(packageJson.data.repository)}>
+                repository
+              </a>
             </>
           )}
 
-          {packageJson.license && (
+          {packageJson.data.license && (
             <>
               <NavbarDivider />
-              <div>{packageJson.license}</div>
+              <div>{packageJson.data.license}</div>
             </>
           )}
 
-          {packageJson.description && (
+          {packageJson.data.description && (
             <>
               <NavbarDivider />
-              <div>{packageJson.description}</div>
+              <div>{packageJson.data.description}</div>
             </>
           )}
         </NavbarGroup>
@@ -295,13 +230,7 @@ const Package: FC = () => {
         </div>
         <Divider />
         <div style={{ flexGrow: 1, overflow: 'auto' }}>
-          {loadingCode ? (
-            <div style={{ ...centerStyles, height: '100%' }}>
-              <Spinner />
-            </div>
-          ) : (
-            <Preview code={code} ext={ext} />
-          )}
+          <Preview filePath={filePath} />
         </div>
       </div>
     </div>

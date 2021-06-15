@@ -4,6 +4,8 @@ import 'github-fork-ribbon-css/gh-fork-ribbon.css'
 import { FC, useEffect } from 'react'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
+import { SWRConfig } from 'swr'
+import { Intent, Toaster } from '@blueprintjs/core'
 
 const GA_MEASUREMENT_ID = 'UA-145009360-1'
 
@@ -23,7 +25,20 @@ const App: FC<AppProps> = ({ Component, pageProps }) => {
     })
   }, [])
 
-  return <Component {...pageProps} />
+  return (
+    <SWRConfig
+      value={{
+        onError(err, key) {
+          Toaster.create().show({
+            message: err.message,
+            intent: Intent.DANGER,
+          })
+        },
+      }}
+    >
+      <Component {...pageProps} />
+    </SWRConfig>
+  )
 }
 
 export default App

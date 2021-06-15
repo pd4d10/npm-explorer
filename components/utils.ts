@@ -72,21 +72,13 @@ export type PackageMetaItem = PackageMetaFile | PackageMetaDirectory
 
 const UNPKG_URL = 'https://unpkg.com'
 
-export const fetchPackageJson = async (packageName: string) => {
-  const res = await fetch(`${UNPKG_URL}/${packageName}/package.json`)
-  return res.json()
-}
-
-export const fetchMeta = async (packageName: string) => {
-  const res = await fetch(`${UNPKG_URL}/${packageName}/?meta`)
-  const json = await res.json()
-  return json as PackageMetaDirectory
-}
-
-export const fetchCode = async (packageName: string, path: string) => {
-  // await new Promise(r => setTimeout(r, 4000)) // For testing
-  const res = await fetch(`${UNPKG_URL}/${packageName}${path}`)
-  return res.text()
+export const unpkgFetcher = async (path: string, text = false) => {
+  const res = await fetch(UNPKG_URL + path)
+  if (text) {
+    return res.text()
+  } else {
+    return res.json()
+  }
 }
 
 export const centerStyles: CSSProperties = {
