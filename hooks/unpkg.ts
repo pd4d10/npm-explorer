@@ -25,6 +25,6 @@ export const useInfo = () => {
     unpkgPrefix,
     unpkgPkgUrl: unpkgPrefix + '/package.json',
     unpkgMetaUrl: unpkgPrefix + '/?meta',
-    registryUrl: '/npmjs/' + fullName + (version ? '/' + version : ''),
+    registryUrl: '/npmjs/' + fullName,
   }
 }

@@ -1,48 +1,26 @@
-import React, { useState, FC, useRef } from 'react'
+import React, { useState, FC } from 'react'
 import path from 'path'
-import {
-  Tree,
-  ITreeNode,
-  Divider,
-  Navbar,
-  NavbarGroup,
-  NavbarDivider,
-  Dialog,
-  Classes,
-  Spinner,
-  Toaster,
-  Button,
-} from '@blueprintjs/core'
+import { Tree, ITreeNode, Divider, Spinner } from '@blueprintjs/core'
 import { useRouter } from 'next/router'
 import numeral from 'numeral'
-// import GitHubButton from 'react-github-btn'
 import {
-  getRepositoryUrl,
   PackageMetaDirectory,
   PackageMetaItem,
   centerStyles,
   HEADER_HEIGHT,
-  UNPKG_URL,
 } from '@/components/utils'
 import { Preview } from '@/components/preview'
-import { Entry } from '@/components/entry'
 import useSWR from 'swr'
 import { useInfo } from '@/hooks/unpkg'
+import { Header } from '@/components/header'
 
 const Package: FC = () => {
   const { isReady } = useRouter()
-  const info = useInfo()
-
-  const toastRef = useRef<Toaster>(null)
   const [expandedMap, setExpandedMap] = useState<{ [key: string]: boolean }>({})
   const [selected, setSelected] = useState<string>()
   const [filePath, setFilePath] = useState<string>()
-  const [dialogOpen, setDialogOpen] = useState(false)
-
-  const packageJson = useSWR<any>(info?.unpkgPkgUrl ?? null)
+  const info = useInfo()
   const meta = useSWR<PackageMetaDirectory>(info?.unpkgMetaUrl ?? null)
-  const registryInfo = useSWR<any>(info?.registryUrl ?? null)
-  console.log(registryInfo.data)
 
   const handleClick = async (node: ITreeNode<PackageMetaItem>) => {
     if (!node.nodeData) return
@@ -106,7 +84,7 @@ const Package: FC = () => {
 
   if (!isReady) return null
 
-  if (packageJson.isValidating || meta.isValidating) {
+  if (meta.isValidating) {
     return (
       <div style={{ ...centerStyles, height: '100vh' }}>
         <Spinner />
@@ -121,87 +99,7 @@ const Package: FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
-      {/* FIXME: Type */}
-      <Toaster ref={toastRef as any} />
-      <Navbar style={{ height: HEADER_HEIGHT }}>
-        <NavbarGroup style={{ height: HEADER_HEIGHT }}>
-          <Button
-            onClick={() => {
-              setDialogOpen(true)
-            }}
-          >
-            {packageJson.data.name}@{packageJson.data.version}
-          </Button>
-
-          <Dialog
-            isOpen={dialogOpen}
-            title="Select package"
-            icon="info-sign"
-            onClose={() => {
-              setDialogOpen(false)
-            }}
-          >
-            <div className={Classes.DIALOG_BODY}>
-              <Entry
-                afterChange={() => {
-                  setDialogOpen(false)
-                }}
-              />
-            </div>
-          </Dialog>
-
-          <NavbarDivider />
-          <a
-            href={`https://www.npmjs.com/package/${packageJson.data.name}/v/${packageJson.data.version}`}
-          >
-            npm
-          </a>
-
-          {packageJson.data.homepage && (
-            <>
-              <NavbarDivider />
-              <a href={packageJson.data.homepage}>homepage</a>
-            </>
-          )}
-
-          {packageJson.data.repository && (
-            <>
-              <NavbarDivider />
-              <a href={getRepositoryUrl(packageJson.data.repository)}>
-                repository
-              </a>
-            </>
-          )}
-
-          {packageJson.data.license && (
-            <>
-              <NavbarDivider />
-              <div>{packageJson.data.license}</div>
-            </>
-          )}
-
-          {packageJson.data.description && (
-            <>
-              <NavbarDivider />
-              <div>{packageJson.data.description}</div>
-            </>
-          )}
-        </NavbarGroup>
-        <NavbarGroup
-          align="right"
-          style={{ height: HEADER_HEIGHT, fontSize: 0 }}
-        >
-          {/* <GitHubButton
-            href="https://github.com/pd4d10/npmview"
-            aria-label="Star pd4d10/npmview on GitHub"
-            data-icon="octicon-star"
-            data-show-count
-            data-size="large"
-          >
-            Star
-          </GitHubButton> */}
-        </NavbarGroup>
-      </Navbar>
+      <Header />
       <div
         style={{
           flexGrow: 1,

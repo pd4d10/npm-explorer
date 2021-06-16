@@ -1,6 +1,8 @@
 import 'normalize.css/normalize.css'
 import '@blueprintjs/core/lib/css/blueprint.css'
 import 'github-fork-ribbon-css/gh-fork-ribbon.css'
+import './app.css'
+
 import { FC, useEffect } from 'react'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
@@ -28,6 +30,7 @@ const App: FC<AppProps> = ({ Component, pageProps }) => {
   return (
     <SWRConfig
       value={{
+        revalidateOnFocus: false,
         onError(err, key) {
           Toaster.create().show({
             message: err.message,
